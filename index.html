@@ -1,125 +1,452 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Soil Water Retention Curves</title>
+<meta charset="utf-8">
+<title>Soil Water Retention</title>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 
-    <!--Import Google Icon Font-->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+body {
+  margin:0;
+  background:#f6f6f6;
+  font-family:system-ui, sans-serif;
+}
+.wrapper {
+  max-width:1200px;
+  margin:20px auto;
+  padding:10px;
+}
+.app {
+  display:flex;
+  gap:14px;
+}
+.panel {
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:14px;
+}
+.left {
+  width:360px;
+}
+.right {
+  flex:1;
+}
+label {
+  font-size:12px;
+}
+select, input[type="number"] {
+  width:160px;
+  padding:6px;
+  margin-left:6px;
+}
+input[type="range"] {
+  width:100%;
+}
+.block {
+  margin:10px 0;
+}
+pre {
+  font-family:"Courier New", monospace;
+  font-size:12px;
+  background:#fafafa;
+  border:1px dashed #ccc;
+  padding:10px;
+  border-radius:8px;
+}
 
-    <!--Import materialize.css-->
-    <link type="text/css" rel="stylesheet" href="materialize/css/materialize.min.css"  media="screen,projection"/>
+label span {
+  font-family: "Courier New", monospace;
+}
 
-    <!--Import charts.css-->
-    <link type="text/css" rel="stylesheet" href="chartjs/Chart.min.css"  media="screen,projection"/>
-
-    <!-- Mathjax inline specs -->
-    <script type="text/x-mathjax-config">
-        MathJax.Hub.Config({
-          // enable $ for inline math -> use \$ for ordinary dollar-sign
-          tex2jax: {
-            inlineMath: [['$','$'], ['\\(','\\)']],
-            processEscapes: true
-          }
-        });
-      </script>
+</style>
 </head>
+
 <body>
+<div class="wrapper">
+<div class="app">
 
-    <div class="container">
-        <h2>Soil Water Retention Curve</h2>
-        <div class="row">
+<div class="panel left">
+<h1>Interactive Soil Water Retention Curves</h1>
 
-            <!-- Parameters-->
-            <div class="col s3">
-               
-                <label>Soil textural class</label>
-                <select id="soil-textural-class" class="browser-default">
-                  <option value="clay" selected>Clay</option>
-                  <option value="clayLoam">Clay loam</option>
-                  <option value="loam">Loam</option>
-                  <option value="loamySand">Loamy sand</option>
-                  <option value="sand">Sand</option>
-                  <option value="sandyClay">Sandy clay</option>
-                  <option value="sandyClayLoam">Sandy clay loam</option>
-                  <option value="sandyLoam">Sandy loam</option>
-                  <option value="silt">Silt</option>
-                  <option value="siltyClay">Silty clay</option>
-                  <option value="siltyClayLoam">Silty clay loam</option>
-                  <option value="siltLoam">Silt loam</option>
+<div class="block">
+<label>USDA texture</label>
+<select id="texture"></select>
+</div>
 
-                </select>
+<div class="block">
+<label><input type="checkbox" id="logx" checked> log10 ψ axis</label>
+</div>
 
-                <form action="#">
-                    <p class="range-field">
-                        <label> $ \theta_{saturation} $ <input type="range" id="theta-sat-slider" min="0.35" max="0.50" step="0.01" value="0.459"/></label>
-                    </p>
-                    <p class="range-field">
-                        <label> $ \theta_{residual} $ <input type="range" id="theta-res-slider" min="0.0" max="0.25" step="0.01" value="0.098"/></label>
-                    </p>
-                    <p class="range-field">
-                        <label> $ \alpha $ <input type="range" id="alpha-slider" min="0.005" max="0.050" step="0.005" value="0.015"/></label>
-                    </p>
-                    <p class="range-field">
-                        <label> $ n $ <input type="range" id="n-slider" min="0.1" max="10" step="0.1" value="1.25"/></label>
-                    </p>
-                    <p class="range-field">
-                        <label> $ m $ <input type="range" id="m-slider" min="0.01" max="1" step="0.01" value="0.2"/></label>
-                    </p>
-                    
-                </form>
+<div class="block">
+<label>θs = <span id="val_theta_s"></span></label>
+<input type="range" id="theta_s" min="0.25" max="0.65" step="0.001">
+</div>
 
-                <br/>
+<div class="block">
+<label>θr = <span id="val_theta_r"></span></label>
+<input type="range" id="theta_r" min="0.0" max="0.25" step="0.001">
+</div>
 
-                <label>X axis scale</label>
-                <p id="radio-btn">
-                    <label>
-                        <input class="with-gap" name="radio-axis" type="radio" id="linear-radio" value="linear" checked />
-                        <span>Linear</span>
-                    </label>
-                    <label>
-                        <input class="with-gap" name="radio-axis" type="radio" id="logarithmic-radio" value="logarithmic"/>
-                        <span>Logarithmic</span>
-                    </label>
-                </p>
+<div class="block">
+<label>α (1/kPa) = <span id="val_alpha"></span></label>
+<input type="range" id="alpha" min="0.005" max="0.7" step="0.0005">
+</div>
 
-                <br/>
+<div class="block">
+<label>n = <span id="val_n"></span></label>
+<input type="range" id="n" min="1.05" max="3.0" step="0.01">
+</div>
 
-                <label>Track changes</label>
-                <div class="switch">
-                    <label style="padding-right: 5px;;">
-                        Off
-                        <input id="track-changes-checkbox" type="checkbox">
-                        <span class="lever"></span>
-                        On
-                    </label>
-                    <a class="waves-effect waves-light btn-small" id="reset-btn">Reset</a>
-                </div>
-            </div>
+<div class="block">
+<label>FAW stress</label>
+<input type="number" id="faw" value="0.5" min="0" max="1" step="0.01">
+</div>
 
-            <!-- Chart js-->
-            <div class="col s9">
-                <canvas class="col s6" id="swrc-chart" height="250"></canvas>
-            </div>
+<div class="block" style="display:flex; gap:8px; align-items:flex-end;">
+  <label>Work (kPa):</label>
+  <input type="number" id="wa" value="10" style="width:60px;">
+  <span style="font-size:30px;">→</span>
+  <input type="number" id="wb" value="1500" style="width:60px;">
+</div>
 
-        </div>
-    </div>
+<pre id="readout"></pre>
+</div>
 
-    <!--Materialize.js-->
-    <script type="text/javascript" src="materialize/js/materialize.min.js"></script>
-
-    <!--Chart.js-->
-    <script type="text/javascript" src="chartjs/Chart.min.js"></script>
-
-    <!--Mathjax-->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-
-    <script src="soilpar.js"></script>
-    <script src="retentioncurve.js"></script>
+<div class="panel right">
+<div id="plot" style="width:100%;height:540px;"></div>
 
 
+</div>
+
+
+</div>
+
+<div class="panel" style="margin-top:14px;">
+  <h3 style="margin:0 0 8px 0;">Default van Genuchten parameters by USDA textural class</h3>
+  <div style="font-size:12px; line-height:1.35; margin-bottom:10px;">
+    Values shown are textural-class averages (Oklahoma Mesonet / MesoSoil database). Units: θ in m³ m⁻³, α in kPa⁻¹, n unitless.
+  </div>
+
+  <table style="width:100%; border-collapse:collapse; font-size:12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left; border-bottom:2px solid #ccc; padding:6px;">Textural class</th>
+        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">N</th>
+        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">θr</th>
+        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">θs</th>
+        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">α (kPa⁻¹)</th>
+        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">n</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Clay</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">85</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.07</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.45</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.13</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.26</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Clay loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">83</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.06</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.40</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.36</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">85</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.04</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.38</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.43</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Loamy sand</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">6</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.02</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.38</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.58</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.55</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Sandy clay</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">6</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.06</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.39</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.11</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.28</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Sandy clay loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">37</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.05</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.38</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.29</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.35</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Sandy loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">58</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.03</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.37</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.35</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.41</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Silty clay</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">55</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.08</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.43</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.25</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Silty clay loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">56</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.07</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.42</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.36</td></tr>
+      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Silt loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">70</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.04</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.39</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.09</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.58</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:10px;">
+    <pre style="margin:0; white-space:pre-wrap;">Reference:
+Scott, B. L., T. E. Ochsner, B. G. Illston, C. A. Fiebrich, J. B. Basara, and A. J. Sutherland (2013).
+“New Soil Property Database Improves Oklahoma Mesonet Soil Moisture Estimates.”
+Journal of Atmospheric and Oceanic Technology, 30, 2585–2595. Table 2.</pre>
+  </div>
+</div>
+
+
+<div class="panel" style="margin-top:14px;">
+<pre>
+VARIABLE DESCRIPTIONS
+
+θs (theta_s)
+  Saturated volumetric water content (cm³ of water per 1 cm³ of soil; same as cm³ cm⁻³ or m³ m⁻³).
+  Represents the upper limit of water storage when all soil pores are filled with water.
+
+θr (theta_r)
+  Residual volumetric water content (cm³ cm⁻³). Lower asymptote of the retention
+  curve where water is strongly bound and largely unavailable to plants. Some 
+  researchers interpret the residual water as the point at which liquid water stops flowing in the soil.
+  From here on water vapor tends to dominate.
+
+α (alpha, 1/kPa)
+  Inverse air-entry parameter of the van Genuchten model. Controls the matric
+  potential at which drainage begins.
+
+n
+  Shape parameter of the van Genuchten model controlling the steepness of the
+  retention curve. Higher values correspond to sharper transitions.
+
+ψ (matric potential, kPa)
+  Soil water tension expressed as matric potential. Positive values represent
+  increasing difficulty for roots to extract water.
+
+θ (volumetric water content)
+  Fraction of soil volume occupied by water (m³ m⁻³).
+
+θ(10 kPa)
+  Water content at field capacity, commonly used as the upper bound of plant-
+  available water. Some older literature used 33 kPa of tension for this point,
+  but new evidence shows that 10 kPa is a better approximation compared to field observations.
+
+θ(1500 kPa)
+  Water content at the permanent wilting point, commonly used as the lower bound
+  of plant-available water. This tension can change for different crops, although the 
+  resulting volumetric water content barely changes, so most researchers and practitioners use
+  1500 kPa as the default for simplicity and consistency.
+
+PAWC (plant available water capacity)
+  Difference between θ(10 kPa) and θ(1500 kPa). Represents the total extractable
+  water assuming equal work across θ. One drawback of this range is that it assumes that every
+  unit of water taken up by the plants requires the same amount of work or effort, but in reality
+  it becomes increasingly more difficult (see the "work" estimate below for a more realistic
+  representation of the cumulative effort to extract water from one soil moisture level to another).
+
+FAW (fraction of available water)
+  Fraction of PAWC remaining in the root zone:
+    FAW = (θ − θ1500) / (θ10 − θ1500)
+
+PAWC / θs (%)
+  Fraction of saturated water content that is plant-available. Indicates how
+  much of the total soil water storage can be accessed by plants.
+
+θ_stress
+  Volumetric water content corresponding to the selected FAW threshold for the
+  onset of plant water stress.
+
+ψ_stress (kPa)
+  Matric potential corresponding to θ_stress, obtained by inverting the van
+  Genuchten retention curve.
+
+Inflection point (log10 ψ)
+  Matric potential at which the curvature of the retention curve changes sign
+  when plotted against log10(ψ). Often associated with pore-size
+  distribution transitions.
+
+Work (J m⁻³)
+  Cumulative energy required to extract water between two matric potentials:
+    W = ∫ ψ dθ
+  Represents the physical effort required by plants to remove water from the soil.
+</pre>
+
+<pre style="font-family:'Courier New', monospace; font-size:12px; text-align:center; margin-top: 90px;">
+Created by Andres Patrignani, Soil Water Processes
+Department of Agronomy, Kansas State University
+Contact: andrespatrignani@ksu.edu
+</pre>
+
+</div>
+
+</div>
+
+
+
+
+<script>
+/* ---------- texture presets (ROSETTA centroids) ---------- */
+const TEXTURES = [
+  ["Clay", {
+    theta_r: 0.07,
+    theta_s: 0.45,
+    alpha:   0.13,   // 1/kPa
+    n:       1.26
+  }],
+  ["Clay loam", {
+    theta_r: 0.06,
+    theta_s: 0.40,
+    alpha:   0.16,
+    n:       1.36
+  }],
+  ["Loam", {
+    theta_r: 0.04,
+    theta_s: 0.38,
+    alpha:   0.16,
+    n:       1.43
+  }],
+  ["Loamy sand", {
+    theta_r: 0.02,
+    theta_s: 0.38,
+    alpha:   0.58,
+    n:       1.55
+  }],
+  ["Sandy clay", {
+    theta_r: 0.06,
+    theta_s: 0.39,
+    alpha:   0.11,
+    n:       1.28
+  }],
+  ["Sandy clay loam", {
+    theta_r: 0.05,
+    theta_s: 0.38,
+    alpha:   0.29,
+    n:       1.35
+  }],
+  ["Sandy loam", {
+    theta_r: 0.03,
+    theta_s: 0.37,
+    alpha:   0.35,
+    n:       1.41
+  }],
+  ["Silty clay", {
+    theta_r: 0.08,
+    theta_s: 0.43,
+    alpha:   0.16,
+    n:       1.25
+  }],
+  ["Silty clay loam", {
+    theta_r: 0.07,
+    theta_s: 0.42,
+    alpha:   0.16,
+    n:       1.36
+  }],
+  ["Silt loam", {
+    theta_r: 0.04,
+    theta_s: 0.39,
+    alpha:   0.09,
+    n:       1.58
+  }]
+];
+
+
+const el = id => document.getElementById(id);
+
+/* ---------- helpers ---------- */
+
+function vgTheta(psi,p){
+  const m = 1 - 1/p.n;
+  return p.theta_r + (p.theta_s-p.theta_r) * Math.pow(1 + Math.pow(p.alpha*psi,p.n), -m);
+}
+
+function psiFromTheta(theta,p){
+  const m = 1 - 1/p.n;
+  const Se = Math.min(0.999999, Math.max(1e-12,(theta-p.theta_r)/(p.theta_s-p.theta_r)));
+  return Math.pow(Math.pow(Se,-1/m)-1,1/p.n)/p.alpha;
+}
+
+function psiInflectionLog(p){
+  const m = 1 - 1/p.n;
+  return (1/p.alpha) * Math.pow(1/m,1/p.n);
+}
+
+function geomspace(a,b,n){
+  const la=Math.log(a), lb=Math.log(b);
+  return Array.from({length:n},(_,i)=>Math.exp(la+(lb-la)*i/(n-1)));
+}
+
+function workBetween(a,b,p){
+  let lo=Math.min(a,b), hi=Math.max(a,b);
+  const psi=geomspace(lo,hi,4000);
+  const th=psi.map(x=>vgTheta(x,p));
+  let W=0;
+  for(let i=0;i<th.length-1;i++){
+    const dtheta=-(th[i+1]-th[i]);
+    const pm=0.5*(psi[i+1]+psi[i]);
+    W+=pm*dtheta;
+  }
+  return 1000*W;
+}
+
+/* ---------- UI wiring ---------- */
+function loadTextures(){
+  TEXTURES.forEach((t,i)=>{
+    const o=document.createElement("option");
+    o.value=i; o.textContent=t[0];
+    el("texture").appendChild(o);
+  });
+  el("texture").value=3;
+}
+
+function applyTexture(){
+  const p=TEXTURES[el("texture").value][1];
+  el("theta_r").value=p.theta_r;
+  el("theta_s").value=p.theta_s;
+  el("alpha").value=p.alpha;
+  el("n").value=p.n;
+  update();
+}
+
+function update(){
+
+  const p = {
+  theta_r: parseFloat(el("theta_r").value),
+  theta_s: parseFloat(el("theta_s").value),
+  alpha:   parseFloat(el("alpha").value),
+  n:       parseFloat(el("n").value)
+};
+
+  el("val_theta_s").textContent = p.theta_s.toFixed(3);
+    el("val_theta_r").textContent = p.theta_r.toFixed(3);
+    el("val_alpha").textContent   = p.alpha.toFixed(4);
+    el("val_n").textContent       = p.n.toFixed(3);
+
+  const psi=geomspace(0.1,10000,500);
+  const theta=psi.map(x=>vgTheta(x,p));
+
+  const t10=vgTheta(10,p), t15=vgTheta(1500,p);
+  const pawc=t10-t15;
+  const faw=parseFloat(el("faw").value);
+  const tStress=t15+faw*pawc;
+  const psiStress=psiFromTheta(tStress,p);
+
+  const inf=psiInflectionLog(p);
+  const W=workBetween(parseFloat(el("wa").value),parseFloat(el("wb").value),p);
+  const pawc_pct_sat = 100.0 * pawc / p.theta_s;
+
+  el("readout").textContent =
+`θ(10 kPa)     = ${t10.toFixed(4)}
+θ(1500 kPa)   = ${t15.toFixed(4)}
+PAWC          = ${pawc.toFixed(4)}
+PAWC / θs     = ${pawc_pct_sat.toFixed(1)} %
+
+θ_stress      = ${tStress.toFixed(4)}
+ψ_stress (kPa)= ${psiStress.toFixed(1)}
+
+ψ_inf (log)   = ${inf.toFixed(1)} kPa
+
+Work (J/m³)   = ${W.toFixed(0)}`;
+
+  const mask=(a,b)=>psi.map((x,i)=>x>=a&&x<=b?theta[i]:null);
+
+  const traces=[
+    {x:psi,y:theta,mode:"lines",name:"SWRC",line:{color:"#222"}},
+    {x:psi,y:mask(10,psiStress),fill:"tozeroy",name:"No stress",
+     line:{color:"rgba(80,160,80,0.8)"},fillcolor:"rgba(80,160,80,0.25)"},
+    {x:psi,y:mask(psiStress,1500),fill:"tozeroy",name:"Stress",
+     line:{color:"rgba(200,80,80,0.8)"},fillcolor:"rgba(200,80,80,0.25)"},
+  ];
+
+  const layout={
+    margin:{l:60,r:20,t:30,b:60},
+    xaxis:{
+      title:"Matric potential ψ (kPa)",
+      type:el("logx").checked?"log":"linear",
+      range:el("logx").checked?[Math.log10(0.5),4]:undefined
+    },
+    yaxis: {
+        title: "Volumetric water content θ (m³ m⁻³)",
+        range: [0.0, 0.65],
+        autorange: false
+        },
+    showlegend:true
+  };
+
+  Plotly.react("plot",traces,layout,{displayModeBar:false});
+}
+
+loadTextures();
+applyTexture();
+
+["theta_r","theta_s","alpha","n","faw","wa","wb","logx"]
+.forEach(id=>el(id).addEventListener("input",update));
+
+el("texture").addEventListener("change",applyTexture);
+</script>
 </body>
 </html>
