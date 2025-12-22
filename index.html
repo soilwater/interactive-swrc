@@ -164,6 +164,28 @@ Journal of Atmospheric and Oceanic Technology, 30, 2585–2595. Table 2.</pre>
 
 <div class="panel" style="margin-top:14px;">
 <pre>
+SOIL WATER RETENTION MODEL
+
+The soil water retention curve is described using the van Genuchten (1980) model:
+
+θ(ψ) = θr + (θs − θr) [1 + (α |ψ|)^n]^(-m) ,
+with m = 1 − 1/n
+
+where |ψ| is the absolute matric potential (kPa), θ is volumetric water content
+(m³ m⁻³), θr is the residual water content, θs is the saturated water content,
+α is the inverse air-entry parameter (kPa⁻¹), and n is a shape parameter.
+
+Reference:
+van Genuchten, M. T. (1980). A closed-form equation for predicting the hydraulic
+conductivity of unsaturated soils. Soil Science Society of America Journal, 44,
+892–898.
+</pre>
+</div>
+
+
+<div class="panel" style="margin-top:14px;">
+
+<pre>
 VARIABLE DESCRIPTIONS
 
 θs (theta_s)
@@ -415,24 +437,53 @@ Work (J/m³)   = ${W.toFixed(0)}`;
   const mask=(a,b)=>psi.map((x,i)=>x>=a&&x<=b?theta[i]:null);
 
   const traces=[
-    {x:psi,y:theta,mode:"lines",name:"SWRC",line:{color:"#222"}},
-    {x:psi,y:mask(10,psiStress),fill:"tozeroy",name:"No stress",
-     line:{color:"rgba(80,160,80,0.8)"},fillcolor:"rgba(80,160,80,0.25)"},
-    {x:psi,y:mask(psiStress,1500),fill:"tozeroy",name:"Stress",
-     line:{color:"rgba(200,80,80,0.8)"},fillcolor:"rgba(200,80,80,0.25)"},
+    {
+        x:psi,
+        y:theta,
+        mode:"lines",
+        name:"SWRC",
+        line:{color:"#222"},
+        hovertemplate:"|ψ| = %{x:.2f} kPa<br>" + "θ = %{y:.4f} m³ m⁻³" + "<extra></extra>"
+    },
+
+    {x:psi,
+        y:mask(10,psiStress),
+        fill:"tozeroy",
+        name:"No stress",
+        line:{color:"rgba(80,160,80,0.8)"},
+        fillcolor:"rgba(80,160,80,0.25)",
+        hovertemplate:"|ψ| = %{x:.2f} kPa<br>" + "θ = %{y:.4f} m³ m⁻³" + "<extra>No stress</extra>"
+
+    },
+    {x:psi,
+        y:mask(psiStress,1500),
+        fill:"tozeroy",
+        name:"Stress",
+        line:{color:"rgba(200,80,80,0.8)"},
+        fillcolor:"rgba(200,80,80,0.25)",
+        hovertemplate:"|ψ| = %{x:.2f} kPa<br>" + "θ = %{y:.4f} m³ m⁻³" + "<extra>Stress</extra>"
+
+    },
   ];
 
   const layout={
+    plot_bgcolor: "#ffffff",
+    paper_bgcolor: "#ffffff",
     margin:{l:60,r:20,t:30,b:60},
     xaxis:{
-      title:"Matric potential ψ (kPa)",
+      title:"Absolute Matric potential |ψ| (kPa)",
       type:el("logx").checked?"log":"linear",
-      range:el("logx").checked?[Math.log10(0.5),4]:undefined
+      range:el("logx").checked?[Math.log10(0.5),4]:undefined,
+      tickvals: el("logx").checked? [0.1, 1, 10, 100, 1000, 10000]: undefined,
+      ticktext: el("logx").checked? ["0.1", "1", "10", "100", "1000", "10000"]: undefined,
     },
     yaxis: {
         title: "Volumetric water content θ (m³ m⁻³)",
         range: [0.0, 0.65],
-        autorange: false
+        autorange: false,
+        showgrid: true,
+        gridcolor: "#e0e0e0",
+        gridwidth: 1,
         },
     showlegend:true
   };
