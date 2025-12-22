@@ -29,7 +29,7 @@ body {
 .left {
   width:360px;
 }
-.right {
+.center {
   flex:1;
 }
 label {
@@ -59,6 +59,32 @@ label span {
   font-family: "Courier New", monospace;
 }
 
+.campbell-active .campbell-col {
+background: #f9f9f9;
+  box-shadow: inset 0 0 0 9999px rgba(255,140,70,0.08);
+}
+
+.vg-active .vg-col {
+background: #f9f9f9;
+  box-shadow: inset 0 0 0 9999px rgba(255,140,70,0.08);
+}
+
+#param-table th,
+#param-table td {
+  text-align: center;
+  border: 1px solid #e0e0e0;
+  padding: 6px;
+}
+
+#param-table thead th {
+  background: #f9f9f9;
+  font-weight: 600;
+}
+
+#param-table tbody tr:hover td {
+  background: #f5f5f5;
+}
+
 </style>
 </head>
 
@@ -75,6 +101,14 @@ label span {
 </div>
 
 <div class="block">
+<label>Retention model</label>
+<select id="model">
+  <option value="campbell" selected>Campbell</option>
+  <option value="vg">van Genuchten</option>
+</select>
+</div>
+
+<div class="block">
 <label><input type="checkbox" id="logx" checked> log10 ψ axis</label>
 </div>
 
@@ -83,37 +117,48 @@ label span {
 <input type="range" id="theta_s" min="0.25" max="0.65" step="0.001">
 </div>
 
-<div class="block">
+<div class="block campbell">
+<label>ψe (kPa) = <span id="val_psie"></span></label>
+<input type="range" id="psie" min="0.5" max="10" step="0.1">
+</div>
+
+<div class="block campbell">
+<label>b = <span id="val_b"></span></label>
+<input type="range" id="b" min="1.0" max="10" step="0.1">
+</div>
+
+<div class="block vg">
 <label>θr = <span id="val_theta_r"></span></label>
 <input type="range" id="theta_r" min="0.0" max="0.25" step="0.001">
 </div>
 
-<div class="block">
+<div class="block vg">
 <label>α (1/kPa) = <span id="val_alpha"></span></label>
 <input type="range" id="alpha" min="0.005" max="0.7" step="0.0005">
 </div>
 
-<div class="block">
+<div class="block vg">
 <label>n = <span id="val_n"></span></label>
 <input type="range" id="n" min="1.05" max="3.0" step="0.01">
 </div>
+
 
 <div class="block">
 <label>FAW stress</label>
 <input type="number" id="faw" value="0.5" min="0" max="1" step="0.01">
 </div>
 
-<div class="block" style="display:flex; gap:8px; align-items:flex-end;">
+<div class="block" style="display:flex; gap:8px; align-items:center;">
   <label>Work (kPa):</label>
   <input type="number" id="wa" value="10" style="width:60px;">
-  <span style="font-size:30px;">→</span>
+  <span style="font-size:30px; line-height:1;">→</span>
   <input type="number" id="wb" value="1500" style="width:60px;">
 </div>
 
 <pre id="readout"></pre>
 </div>
 
-<div class="panel right">
+<div class="panel center">
 <div id="plot" style="width:100%;height:540px;"></div>
 
 
@@ -123,70 +168,159 @@ label span {
 </div>
 
 <div class="panel" style="margin-top:14px;">
-  <h3 style="margin:0 0 8px 0;">Default van Genuchten parameters by USDA textural class</h3>
-  <div style="font-size:12px; line-height:1.35; margin-bottom:10px;">
-    Values shown are textural-class averages (Oklahoma Mesonet / MesoSoil database). Units: θ in m³ m⁻³, α in kPa⁻¹, n unitless.
+  <h3 style="margin:0 0 8px 0;">
+    Average soil water retention parameters by USDA textural class
+  </h3>
+
+  <div style="font-size:12px; line-height:1.4; margin-bottom:10px;">
+    Textural-class average parameters for the Campbell and van Genuchten soil water
+    retention models. Values are based on Rawls et&nbsp;al. (1982, 1992) as reported
+    in <em>Rain or Shine: An Introduction to Soil Physics (Ochsner, 2026)</em>. Units: θ in m³ m⁻³,
+    ψ<sub>e</sub> in kPa (absolute value), α in kPa⁻¹.
   </div>
 
-  <table style="width:100%; border-collapse:collapse; font-size:12px;">
-    <thead>
-      <tr>
-        <th style="text-align:left; border-bottom:2px solid #ccc; padding:6px;">Textural class</th>
-        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">N</th>
-        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">θr</th>
-        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">θs</th>
-        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">α (kPa⁻¹)</th>
-        <th style="text-align:right; border-bottom:2px solid #ccc; padding:6px;">n</th>
-      </tr>
-    </thead>
+<table id="param-table" style="width:100%; border-collapse:collapse; font-size:12px;">
+  <thead>
+    <tr>
+      <th></th>
+      <th colspan="3" class="campbell-col">Campbell model</th>
+      <th colspan="4" class="vg-col">van Genuchten model</th>
+    </tr>
+    <tr>
+    <th style="text-align:left;">Textural class</th>
+
+      <th class="campbell-col">θs</th>
+      <th class="campbell-col">ψe (kPa)</th>
+      <th class="campbell-col">b</th>
+
+      <th class="vg-col">θr</th>
+      <th class="vg-col">θs</th>
+      <th class="vg-col">α (kPa⁻¹)</th>
+      <th class="vg-col">n</th>
+    </tr>
+  </thead>
+
     <tbody>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Clay</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">85</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.07</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.45</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.13</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.26</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Clay loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">83</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.06</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.40</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.36</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">85</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.04</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.38</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.43</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Loamy sand</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">6</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.02</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.38</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.58</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.55</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Sandy clay</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">6</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.06</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.39</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.11</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.28</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Sandy clay loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">37</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.05</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.38</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.29</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.35</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Sandy loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">58</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.03</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.37</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.35</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.41</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Silty clay</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">55</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.08</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.43</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.25</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Silty clay loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">56</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.07</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.42</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.16</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.36</td></tr>
-      <tr><td style="padding:6px; border-bottom:1px solid #eee;">Silt loam</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">70</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.04</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.39</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">0.09</td><td style="padding:6px; text-align:right; border-bottom:1px solid #eee;">1.58</td></tr>
+      <tr>
+        <td style="padding:6px;text-align:left;">Clay</td>
+        <td style="padding:6px; text-align:center;">0.459</td>
+        <td style="padding:6px; text-align:center;">3.66</td>
+        <td style="padding:6px; text-align:center;">7.6</td>
+        <td style="padding:6px; text-align:center;">0.098</td>
+        <td style="padding:6px; text-align:center;">0.459</td>
+        <td style="padding:6px; text-align:center;">0.153</td>
+        <td style="padding:6px; text-align:center;">1.25</td>
+      </tr>
+
+      <tr>
+        <td style="padding:6px;text-align:left;">Clay loam</td>
+        <td style="padding:6px; text-align:center;">0.442</td>
+        <td style="padding:6px; text-align:center;">2.54</td>
+        <td style="padding:6px; text-align:center;">5.2</td>
+        <td style="padding:6px; text-align:center;">0.079</td>
+        <td style="padding:6px; text-align:center;">0.442</td>
+        <td style="padding:6px; text-align:center;">0.161</td>
+        <td style="padding:6px; text-align:center;">1.42</td>
+      </tr>
+
+      <tr>
+        <td style="padding:6px;text-align:left;">Loam</td>
+        <td style="padding:6px; text-align:center;">0.399</td>
+        <td style="padding:6px; text-align:center;">1.10</td>
+        <td style="padding:6px; text-align:center;">4.5</td>
+        <td style="padding:6px; text-align:center;">0.061</td>
+        <td style="padding:6px; text-align:center;">0.399</td>
+        <td style="padding:6px; text-align:center;">0.113</td>
+        <td style="padding:6px; text-align:center;">1.47</td>
+      </tr>
+
+      <tr>
+        <td style="padding:6px;text-align:left;">Sand</td>
+        <td style="padding:6px; text-align:center;">0.375</td>
+        <td style="padding:6px; text-align:center;">0.71</td>
+        <td style="padding:6px; text-align:center;">1.7</td>
+        <td style="padding:6px; text-align:center;">0.053</td>
+        <td style="padding:6px; text-align:center;">0.375</td>
+        <td style="padding:6px; text-align:center;">0.359</td>
+        <td style="padding:6px; text-align:center;">3.18</td>
+      </tr>
+
+      <tr>
+        <td style="padding:6px;text-align:left;">Silt loam</td>
+        <td style="padding:6px; text-align:center;">0.439</td>
+        <td style="padding:6px; text-align:center;">2.04</td>
+        <td style="padding:6px; text-align:center;">4.7</td>
+        <td style="padding:6px; text-align:center;">0.065</td>
+        <td style="padding:6px; text-align:center;">0.439</td>
+        <td style="padding:6px; text-align:center;">0.052</td>
+        <td style="padding:6px; text-align:center;">1.66</td>
+      </tr>
     </tbody>
   </table>
 
   <div style="margin-top:10px;">
-    <pre style="margin:0; white-space:pre-wrap;">Reference:
-Scott, B. L., T. E. Ochsner, B. G. Illston, C. A. Fiebrich, J. B. Basara, and A. J. Sutherland (2013).
-“New Soil Property Database Improves Oklahoma Mesonet Soil Moisture Estimates.”
-Journal of Atmospheric and Oceanic Technology, 30, 2585–2595. Table 2.</pre>
   </div>
 </div>
 
 
+
 <div class="panel" style="margin-top:14px;">
-<pre>
-SOIL WATER RETENTION MODEL
+
+<pre id="model-campbell">
+SOIL WATER RETENTION MODEL (Campbell)
+
+The soil water retention curve is described using the Campbell (1974) model:
+
+θ(ψ) = θs                          , |ψ| ≤ |ψe|
+θ(ψ) = θs (|ψ| / |ψe|)^(-1/b)      , |ψ| > |ψe|
+
+where |ψ| is the absolute matric potential (kPa), θ is volumetric water
+content (m³ m⁻³), θs is the saturated water content, ψe is the air-entry
+matric potential (kPa), and b is the pore-size distribution index.
+
+The Campbell model represents soil as a bundle of capillary pores and
+explicitly defines an air-entry point separating saturated and unsaturated
+conditions.
+
+Reference:
+Campbell, G. S. (1974). A simple method for determining unsaturated
+conductivity from moisture retention data. Soil Science, 117, 311–314.
+</pre>
+
+<pre id="model-vg">
+SOIL WATER RETENTION MODEL (van Genuchten)
 
 The soil water retention curve is described using the van Genuchten (1980) model:
 
 θ(ψ) = θr + (θs − θr) [1 + (α |ψ|)^n]^(-m) ,
 with m = 1 − 1/n
 
-where |ψ| is the absolute matric potential (kPa), θ is volumetric water content
-(m³ m⁻³), θr is the residual water content, θs is the saturated water content,
-α is the inverse air-entry parameter (kPa⁻¹), and n is a shape parameter.
+where |ψ| is the absolute matric potential (kPa), θ is volumetric water
+content (m³ m⁻³), θr is the residual water content, θs is the saturated
+water content, α is the inverse air-entry parameter (kPa⁻¹), and n is a
+shape parameter.
 
 Reference:
-van Genuchten, M. T. (1980). A closed-form equation for predicting the hydraulic
-conductivity of unsaturated soils. Soil Science Society of America Journal, 44,
-892–898.
+van Genuchten, M. T. (1980). A closed-form equation for predicting the
+hydraulic conductivity of unsaturated soils. Soil Science Society of America
+Journal, 44, 892–898.
 </pre>
+
 </div>
+
 
 
 <div class="panel" style="margin-top:14px;">
 
 <pre>
 VARIABLE DESCRIPTIONS
+
+ψ (matric potential, kPa)
+  Soil water tension expressed as matric potential. Positive values represent
+  increasing difficulty for roots to extract water.
+
+θ (volumetric water content)
+  Fraction of soil volume occupied by water (m³ m⁻³).
 
 θs (theta_s)
   Saturated volumetric water content (cm³ of water per 1 cm³ of soil; same as cm³ cm⁻³ or m³ m⁻³).
@@ -206,12 +340,17 @@ n
   Shape parameter of the van Genuchten model controlling the steepness of the
   retention curve. Higher values correspond to sharper transitions.
 
-ψ (matric potential, kPa)
-  Soil water tension expressed as matric potential. Positive values represent
-  increasing difficulty for roots to extract water.
+ψe (psi_e, kPa)
+  Air-entry matric potential of the Campbell model. Represents the absolute
+  matric potential at which air first enters the largest soil pores and drainage
+  begins. For |ψ| ≤ |ψe| the soil is assumed to remain saturated. Smaller values
+  (closer to zero) indicate coarser soils with earlier drainage.
 
-θ (volumetric water content)
-  Fraction of soil volume occupied by water (m³ m⁻³).
+b
+  Pore-size distribution index of the Campbell model (unitless). Controls the
+  rate at which volumetric water content decreases with increasing matric
+  potential beyond the air-entry point. Larger values indicate a wider pore-size
+  distribution and a more gradual decline in water content with tension.
 
 θ(10 kPa)
   Water content at field capacity, commonly used as the upper bound of plant-
@@ -273,68 +412,31 @@ Contact: andrespatrignani@ksu.edu
 
 <script>
 /* ---------- texture presets (ROSETTA centroids) ---------- */
+const CM_TO_KPA = 1/10.2;
+
 const TEXTURES = [
-  ["Clay", {
-    theta_r: 0.07,
-    theta_s: 0.45,
-    alpha:   0.13,   // 1/kPa
-    n:       1.26
-  }],
-  ["Clay loam", {
-    theta_r: 0.06,
-    theta_s: 0.40,
-    alpha:   0.16,
-    n:       1.36
-  }],
-  ["Loam", {
-    theta_r: 0.04,
-    theta_s: 0.38,
-    alpha:   0.16,
-    n:       1.43
-  }],
-  ["Loamy sand", {
-    theta_r: 0.02,
-    theta_s: 0.38,
-    alpha:   0.58,
-    n:       1.55
-  }],
-  ["Sandy clay", {
-    theta_r: 0.06,
-    theta_s: 0.39,
-    alpha:   0.11,
-    n:       1.28
-  }],
-  ["Sandy clay loam", {
-    theta_r: 0.05,
-    theta_s: 0.38,
-    alpha:   0.29,
-    n:       1.35
-  }],
-  ["Sandy loam", {
-    theta_r: 0.03,
-    theta_s: 0.37,
-    alpha:   0.35,
-    n:       1.41
-  }],
-  ["Silty clay", {
-    theta_r: 0.08,
-    theta_s: 0.43,
-    alpha:   0.16,
-    n:       1.25
-  }],
-  ["Silty clay loam", {
-    theta_r: 0.07,
-    theta_s: 0.42,
-    alpha:   0.16,
-    n:       1.36
-  }],
-  ["Silt loam", {
-    theta_r: 0.04,
-    theta_s: 0.39,
-    alpha:   0.09,
-    n:       1.58
-  }]
+["Clay",{
+  campbell:{theta_s:0.459, psi_e:37.3*CM_TO_KPA, b:7.6},
+  vg:{theta_r:0.098, theta_s:0.459, alpha:0.0150*10.2, n:1.25}
+}],
+["Clay loam",{
+  campbell:{theta_s:0.442, psi_e:25.9*CM_TO_KPA, b:5.2},
+  vg:{theta_r:0.079, theta_s:0.442, alpha:0.0158*10.2, n:1.42}
+}],
+["Loam",{
+  campbell:{theta_s:0.399, psi_e:11.2*CM_TO_KPA, b:4.5},
+  vg:{theta_r:0.061, theta_s:0.399, alpha:0.0111*10.2, n:1.47}
+}],
+["Sand",{
+  campbell:{theta_s:0.375, psi_e:7.26*CM_TO_KPA, b:1.7},
+  vg:{theta_r:0.053, theta_s:0.375, alpha:0.0352*10.2, n:3.18}
+}],
+["Silt loam",{
+  campbell:{theta_s:0.439, psi_e:20.8*CM_TO_KPA, b:4.7},
+  vg:{theta_r:0.065, theta_s:0.439, alpha:0.0051*10.2, n:1.66}
+}]
 ];
+
 
 
 const el = id => document.getElementById(id);
@@ -344,6 +446,17 @@ const el = id => document.getElementById(id);
 function vgTheta(psi,p){
   const m = 1 - 1/p.n;
   return p.theta_r + (p.theta_s-p.theta_r) * Math.pow(1 + Math.pow(p.alpha*psi,p.n), -m);
+}
+
+function campbellTheta(psi,p){
+  return psi <= p.psi_e
+    ? p.theta_s
+    : p.theta_s * Math.pow(psi/p.psi_e,-1/p.b);
+}
+
+function psiFromThetaCampbell(theta,p){
+  if(theta >= p.theta_s) return p.psi_e;
+  return p.psi_e * Math.pow(theta/p.theta_s,-p.b);
 }
 
 function psiFromTheta(theta,p){
@@ -362,10 +475,10 @@ function geomspace(a,b,n){
   return Array.from({length:n},(_,i)=>Math.exp(la+(lb-la)*i/(n-1)));
 }
 
-function workBetween(a,b,p){
+function workBetween(a,b,thetaOfPsi){
   let lo=Math.min(a,b), hi=Math.max(a,b);
   const psi=geomspace(lo,hi,4000);
-  const th=psi.map(x=>vgTheta(x,p));
+  const th=psi.map(thetaOfPsi);
   let W=0;
   for(let i=0;i<th.length-1;i++){
     const dtheta=-(th[i+1]-th[i]);
@@ -374,6 +487,7 @@ function workBetween(a,b,p){
   }
   return 1000*W;
 }
+
 
 /* ---------- UI wiring ---------- */
 function loadTextures(){
@@ -386,40 +500,108 @@ function loadTextures(){
 }
 
 function applyTexture(){
-  const p=TEXTURES[el("texture").value][1];
-  el("theta_r").value=p.theta_r;
-  el("theta_s").value=p.theta_s;
-  el("alpha").value=p.alpha;
-  el("n").value=p.n;
+  const t=TEXTURES[el("texture").value][1];
+
+  el("theta_s").value = t.campbell.theta_s;
+  el("psie").value    = t.campbell.psi_e;
+  el("b").value       = t.campbell.b;
+
+  el("theta_r").value = t.vg.theta_r;
+  el("alpha").value   = t.vg.alpha;
+  el("n").value       = t.vg.n;
+
   update();
 }
 
+
+function toggleModelUI(){
+  const isCamp = el("model").value === "campbell";
+  document.querySelectorAll(".campbell").forEach(d => d.style.display = isCamp ? "block" : "none");
+  document.querySelectorAll(".vg").forEach(d => d.style.display = isCamp ? "none" : "block");
+}
+
+function toggleModelDescription(){
+  el("model-campbell").style.display =
+    el("model").value === "campbell" ? "block" : "none";
+
+  el("model-vg").style.display =
+    el("model").value === "vg" ? "block" : "none";
+}
+
+function highlightParameterTable(){
+  const table = el("param-table");
+  table.classList.remove("campbell-active","vg-active");
+
+  if(el("model").value === "campbell"){
+    table.classList.add("campbell-active");
+  } else {
+    table.classList.add("vg-active");
+  }
+}
+
+
 function update(){
 
-  const p = {
-  theta_r: parseFloat(el("theta_r").value),
-  theta_s: parseFloat(el("theta_s").value),
-  alpha:   parseFloat(el("alpha").value),
-  n:       parseFloat(el("n").value)
-};
+  const model = el("model").value;
+  const psi = geomspace(0.1,10000,500);
 
-  el("val_theta_s").textContent = p.theta_s.toFixed(3);
+  let theta, thetaOfPsi, psiOfTheta, inf = null, p;
+
+  if(model === "campbell"){
+
+    p = {
+      theta_s: parseFloat(el("theta_s").value),
+      psi_e:   parseFloat(el("psie").value),
+      b:       parseFloat(el("b").value)
+    };
+
+    thetaOfPsi = x => campbellTheta(x,p);
+    psiOfTheta = th => psiFromThetaCampbell(th,p);
+
+    theta = psi.map(thetaOfPsi);
+
+    el("val_theta_s").textContent = p.theta_s.toFixed(3);
+    el("val_psie").textContent    = p.psi_e.toFixed(1);
+    el("val_b").textContent       = p.b.toFixed(2);
+
+  } else {
+
+    p = {
+      theta_r: parseFloat(el("theta_r").value),
+      theta_s: parseFloat(el("theta_s").value),
+      alpha:   parseFloat(el("alpha").value),
+      n:       parseFloat(el("n").value)
+    };
+
+    thetaOfPsi = x => vgTheta(x,p);
+    psiOfTheta = th => psiFromTheta(th,p);
+
+    theta = psi.map(thetaOfPsi);
+    inf   = psiInflectionLog(p);
+
+    el("val_theta_s").textContent = p.theta_s.toFixed(3);
     el("val_theta_r").textContent = p.theta_r.toFixed(3);
     el("val_alpha").textContent   = p.alpha.toFixed(4);
     el("val_n").textContent       = p.n.toFixed(3);
+  }
 
-  const psi=geomspace(0.1,10000,500);
-  const theta=psi.map(x=>vgTheta(x,p));
+  // ---- Derived metrics (model-agnostic) ----
+  const t10 = thetaOfPsi(10);
+  const t15 = thetaOfPsi(1500);
 
-  const t10=vgTheta(10,p), t15=vgTheta(1500,p);
-  const pawc=t10-t15;
-  const faw=parseFloat(el("faw").value);
-  const tStress=t15+faw*pawc;
-  const psiStress=psiFromTheta(tStress,p);
+  const pawc = t10 - t15;
+  const faw  = parseFloat(el("faw").value);
 
-  const inf=psiInflectionLog(p);
-  const W=workBetween(parseFloat(el("wa").value),parseFloat(el("wb").value),p);
+  const tStress = t15 + faw * pawc;
+  const psiStress = psiOfTheta(tStress);
+
   const pawc_pct_sat = 100.0 * pawc / p.theta_s;
+
+  const W = workBetween(
+    parseFloat(el("wa").value),
+    parseFloat(el("wb").value),
+    thetaOfPsi
+  );
 
   el("readout").textContent =
 `θ(10 kPa)     = ${t10.toFixed(4)}
@@ -430,7 +612,7 @@ PAWC / θs     = ${pawc_pct_sat.toFixed(1)} %
 θ_stress      = ${tStress.toFixed(4)}
 ψ_stress (kPa)= ${psiStress.toFixed(1)}
 
-ψ_inf (log)   = ${inf.toFixed(1)} kPa
+ψ_inf (log)   = ${inf!==null ? inf.toFixed(1)+" kPa" : "—"}
 
 Work (J/m³)   = ${W.toFixed(0)}`;
 
@@ -438,66 +620,79 @@ Work (J/m³)   = ${W.toFixed(0)}`;
 
   const traces=[
     {
-        x:psi,
-        y:theta,
-        mode:"lines",
-        name:"SWRC",
-        line:{color:"#222"},
-        hovertemplate:"|ψ| = %{x:.2f} kPa<br>" + "θ = %{y:.4f} m³ m⁻³" + "<extra></extra>"
+      x:psi,
+      y:theta,
+      mode:"lines",
+      name:"SWRC",
+      line:{color:"#222"},
+      hovertemplate:"|ψ| = %{x:.2f} kPa<br>θ = %{y:.4f} m³ m⁻³<extra></extra>"
     },
-
-    {x:psi,
-        y:mask(10,psiStress),
-        fill:"tozeroy",
-        name:"No stress",
-        line:{color:"rgba(80,160,80,0.8)"},
-        fillcolor:"rgba(80,160,80,0.25)",
-        hovertemplate:"|ψ| = %{x:.2f} kPa<br>" + "θ = %{y:.4f} m³ m⁻³" + "<extra>No stress</extra>"
-
+    {
+      x:psi,
+      y:mask(10,psiStress),
+      fill:"tozeroy",
+      name:"No stress",
+      line:{color:"rgba(80,160,80,0.8)"},
+      fillcolor:"rgba(80,160,80,0.25)",
+      hovertemplate:"|ψ| = %{x:.2f} kPa<br>θ = %{y:.4f} m³ m⁻³<extra>No stress</extra>"
     },
-    {x:psi,
-        y:mask(psiStress,1500),
-        fill:"tozeroy",
-        name:"Stress",
-        line:{color:"rgba(200,80,80,0.8)"},
-        fillcolor:"rgba(200,80,80,0.25)",
-        hovertemplate:"|ψ| = %{x:.2f} kPa<br>" + "θ = %{y:.4f} m³ m⁻³" + "<extra>Stress</extra>"
-
+    {
+      x:psi,
+      y:mask(psiStress,1500),
+      fill:"tozeroy",
+      name:"Stress",
+      line:{color:"rgba(200,80,80,0.8)"},
+      fillcolor:"rgba(200,80,80,0.25)",
+      hovertemplate:"|ψ| = %{x:.2f} kPa<br>θ = %{y:.4f} m³ m⁻³<extra>Stress</extra>"
     },
   ];
 
   const layout={
-    plot_bgcolor: "#ffffff",
-    paper_bgcolor: "#ffffff",
+    plot_bgcolor:"#ffffff",
+    paper_bgcolor:"#ffffff",
     margin:{l:60,r:20,t:30,b:60},
     xaxis:{
       title:"Absolute Matric potential |ψ| (kPa)",
       type:el("logx").checked?"log":"linear",
       range:el("logx").checked?[Math.log10(0.5),4]:undefined,
-      tickvals: el("logx").checked? [0.1, 1, 10, 100, 1000, 10000]: undefined,
-      ticktext: el("logx").checked? ["0.1", "1", "10", "100", "1000", "10000"]: undefined,
+      tickvals: el("logx").checked ? [0.1,1,10,100,1000,10000] : undefined,
+      ticktext: el("logx").checked ? ["0.1","1","10","100","1000","10000"] : undefined,
     },
-    yaxis: {
-        title: "Volumetric water content θ (m³ m⁻³)",
-        range: [0.0, 0.65],
-        autorange: false,
-        showgrid: true,
-        gridcolor: "#e0e0e0",
-        gridwidth: 1,
-        },
+    yaxis:{
+      title:"Volumetric water content θ (m³ m⁻³)",
+      range:[0.0,0.65],
+      autorange:false,
+      showgrid:true,
+      gridcolor:"#e0e0e0",
+      gridwidth:1,
+    },
     showlegend:true
   };
 
   Plotly.react("plot",traces,layout,{displayModeBar:false});
 }
 
+
 loadTextures();
 applyTexture();
+toggleModelDescription();
+toggleModelUI();
+highlightParameterTable();
+update();
 
-["theta_r","theta_s","alpha","n","faw","wa","wb","logx"]
+["theta_r","theta_s","alpha","n","psie","b","faw","wa","wb","logx"]
 .forEach(id=>el(id).addEventListener("input",update));
 
-el("texture").addEventListener("change",applyTexture);
+el("model").addEventListener("change", ()=>{
+  toggleModelUI();
+  toggleModelDescription();
+  highlightParameterTable();
+  update();
+});
+
+
+el("texture").addEventListener("change", applyTexture);
+
 </script>
 </body>
 </html>
