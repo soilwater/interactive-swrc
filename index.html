@@ -604,17 +604,17 @@ function update(){
   );
 
   el("readout").textContent =
-`θ(10 kPa)     = ${t10.toFixed(4)}
-θ(1500 kPa)   = ${t15.toFixed(4)}
-PAWC          = ${pawc.toFixed(4)}
+`θ(10 kPa)     = ${t10.toFixed(4)} cm³ cm⁻³
+θ(1500 kPa)   = ${t15.toFixed(4)} cm³ cm⁻³
+PAWC          = ${pawc.toFixed(4)} cm³ cm⁻³
 PAWC / θs     = ${pawc_pct_sat.toFixed(1)} %
 
-θ_stress      = ${tStress.toFixed(4)}
-ψ_stress (kPa)= ${psiStress.toFixed(1)}
+θ_stress      = ${tStress.toFixed(4)} cm³ cm⁻³
+ψ_stress      = ${psiStress.toFixed(1)} kPa
 
-ψ_inf (log)   = ${inf!==null ? inf.toFixed(1)+" kPa" : "—"}
+ψ_inf         = ${inf!==null ? inf.toFixed(1)+" kPa" : "—"}
 
-Work (J/m³)   = ${W.toFixed(0)}`;
+Work          = ${W.toFixed(0)} J/m³`;
 
   const mask=(a,b)=>psi.map((x,i)=>x>=a&&x<=b?theta[i]:null);
 
